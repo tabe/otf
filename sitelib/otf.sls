@@ -209,6 +209,16 @@
 
   (define (read-otff iport)
 
+    (define-syntax get-byte
+      (syntax-rules ()
+        ((_)
+         (bytevector-u8-ref (get-bytevector-n iport 1) 0))))
+
+    (define-syntax get-char
+      (syntax-rules ()
+        ((_)
+         (bytevector-s8-ref (get-bytevector-n iport 1) 0))))
+
     (define-syntax get-short
       (syntax-rules ()
         ((_)
@@ -279,6 +289,7 @@
         (let ((*table-cmap* (tag->record-table "cmap"))
               (*table-head* (tag->record-table "head"))
               (*table-hhea* (tag->record-table "hhea"))
+              (*table-OS/2* (tag->record-table "OS/2"))
               (*table-maxp* (tag->record-table "maxp"))
               (*table-post* (tag->record-table "post"))
               (*table-glyf* (tag->record-table "glyf"))
@@ -389,6 +400,84 @@
                    (numGlyphs (get-ushort)))
               (make-maxp Table-version-number numGlyphs)))
 
+          (define (read-OS/2)
+            (go-to-record-table *table-OS/2*)
+            (let* ((version (get-ushort))
+                   (xAvgCharWidth (get-short))
+                   (usWeightClass (get-ushort))
+                   (usWidthClass (get-ushort))
+                   (fsType (get-ushort))
+                   (ySubscriptXSize (get-short))
+                   (ySubscriptYSize (get-short))
+                   (ySubscriptXOffset (get-short))
+                   (ySubscriptYOffset (get-short))
+                   (ySuperscriptXSize (get-short))
+                   (ySuperscriptYSize (get-short))
+                   (ySuperscriptXOffset (get-short))
+                   (ySuperscriptYOffset (get-short))
+                   (yStrikeoutSize (get-short))
+                   (yStrikeoutPosition (get-short))
+                   (sFamilyClass (get-short))
+                   (panose (get-bytevector-n iport 10))
+                   (ulUnicodeRange1 (get-ulong))
+                   (ulUnicodeRange2 (get-ulong))
+                   (ulUnicodeRange3 (get-ulong))
+                   (ulUnicodeRange4 (get-ulong))
+                   (achVendID (get-bytevector-n iport 4))
+                   (fsSelection (get-ushort))
+                   (usFirstCharIndex (get-ushort))
+                   (usLastCharIndex (get-ushort))
+                   (sTypoAscender (get-short))
+                   (sTypoDescender (get-short))
+                   (sTypoLineGap (get-short))
+                   (usWinAscent (get-ushort))
+                   (usWinDescent (get-ushort))
+                   (ulCodePageRange1 (get-ulong))
+                   (ulCodePageRange2 (get-ulong))
+                   (sxHeight (get-short))
+                   (sCapHeight (get-short))
+                   (usDefaultChar (get-ushort))
+                   (usBreakChar (get-ushort))
+                   (usMaxContext (get-ushort)))
+              (assert (<= version 4))
+              (make-OS/2 version 
+                         xAvgCharWidth 
+                         usWeightClass 
+                         usWidthClass 
+                         fsType 
+                         ySubscriptXSize 
+                         ySubscriptYSize 
+                         ySubscriptXOffset 
+                         ySubscriptYOffset 
+                         ySuperscriptXSize 
+                         ySuperscriptYSize 
+                         ySuperscriptXOffset 
+                         ySuperscriptYOffset 
+                         yStrikeoutSize 
+                         yStrikeoutPosition 
+                         sFamilyClass 
+                         panose 
+                         ulUnicodeRange1 
+                         ulUnicodeRange2 
+                         ulUnicodeRange3 
+                         ulUnicodeRange4 
+                         achVendID 
+                         fsSelection 
+                         usFirstCharIndex 
+                         usLastCharIndex 
+                         sTypoAscender 
+                         sTypoDescender 
+                         sTypoLineGap 
+                         usWinAscent 
+                         usWinDescent 
+                         ulCodePageRange1 
+                         ulCodePageRange2 
+                         sxHeight 
+                         sCapHeight 
+                         usDefaultChar 
+                         usBreakChar 
+                         usMaxContext)))
+
           (define (read-post)
             (go-to-record-table *table-post*)
             (let* ((Version (get-bytevector-n iport 4))
@@ -469,7 +558,7 @@
                        #f ; hmtx
                        m
                        #f ; name
-                       #f ; OS/2
+                       (read-OS/2)
                        (read-post)
                        #f ; cvt
                        #f ; fpgm
