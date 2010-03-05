@@ -1,0 +1,20 @@
+An R6RS library for OpenType Format [0]
+
+== License
+
+New BSD License
+
+== Notes
+
+* Tests needs Ypsilon [1] with an external library (xunit) [2];
+  Run `YPSILON_SITELIB="path of (xunit)" make test'.
+* For test, this contains IPA Fonts [3], which is redistributed
+  under IPA Font License Agreement v1.0.
+  See IPAfont00302/Readme_IPAfont00302.txt for detail.
+
+== References
+
+[0] http://www.microsoft.com/typography/otspec/default.htm
+[1] http://code.google.com/p/ypsilon/
+[2] http://github.com/tabe/xunit/
+[3] http://ossipedia.ipa.go.jp/ipafont/
