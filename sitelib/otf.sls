@@ -148,6 +148,27 @@
   (define-record-type maxp
     (fields Table-version-number numGlyphs))
 
+  ;; http://www.microsoft.com/typography/otspec/name.htm
+  (define-record-type name
+    (fields format
+            count
+            stringOffset
+            nameRecord
+            langTagCount
+            langTagRecord))
+
+  (define-record-type lang-tag-record
+    (fields length
+            offset))
+
+  (define-record-type name-record
+    (fields platformID
+            encodingID
+            languageID
+            nameID
+            length
+            offset))
+
   ;; http://www.microsoft.com/typography/otspec/os2.htm
   (define-record-type OS/2
     (fields version ; USHORT
@@ -298,6 +319,7 @@
               (*table-hmtx* (tag->record-table "hmtx"))
               (*table-OS/2* (tag->record-table "OS/2"))
               (*table-maxp* (tag->record-table "maxp"))
+              (*table-name* (tag->record-table "name"))
               (*table-post* (tag->record-table "post"))
               (*table-glyf* (tag->record-table "glyf"))
               (*table-loca* (tag->record-table "loca")))
@@ -424,6 +446,48 @@
             (let* ((Table-version-number (get-fixed))
                    (numGlyphs (get-ushort)))
               (make-maxp Table-version-number numGlyphs)))
+
+          (define (read-name)
+            (go-to-record-table *table-name*)
+            (let* ((format (get-ushort))
+                   (count (get-ushort))
+                   (stringOffset (get-ushort)))
+
+              (assert (<= 0 format 1))
+
+              (let ((nameRecord (make-vector count)))
+                (let lp1 ((i 0))
+
+                  (define (read-name-record)
+                    (let* ((platformID (get-ushort))
+                           (encodingID (get-ushort))
+                           (languageID (get-ushort))
+                           (nameID (get-ushort))
+                           (length (get-ushort))
+                           (offset (get-ushort)))
+                      (make-name-record platformID
+                                        encodingID
+                                        languageID
+                                        nameID
+                                        length
+                                        offset)))
+
+                  (cond ((= i count)
+                         (if (= format 0)
+                             (make-name format count stringOffset nameRecord #f #f)
+                             (let* ((langTagCount (get-ushort))
+                                    (langTagRecord (make-vector langTagCount)))
+                               (let lp2 ((i 0))
+                                 (cond ((= i langTagCount)
+                                        (make-name format count stringOffset nameRecord langTagCount langTagRecord))
+                                       (else
+                                        (let* ((length (get-ushort))
+                                               (offset (get-ushort)))
+                                          (vector-set! langTagRecord i (make-lang-tag-record length offset))
+                                          (lp2 (+ i 1)))))))))
+                        (else
+                         (vector-set! nameRecord i (read-name-record))
+                         (lp1 (+ i 1))))))))
 
           (define (read-OS/2)
             (go-to-record-table *table-OS/2*)
@@ -583,7 +647,7 @@
                          hh
                          (read-hmtx (hhea-numberOfHMetrics hh) (maxp-numGlyphs m))
                          m
-                         #f ; name
+                         (read-name)
                          (read-OS/2)
                          (read-post)
                          #f ; cvt
