@@ -638,42 +638,42 @@
               *loca*))
 
           (let* ((h (read-head))
+                 (hh (read-hhea))
                  (m (read-maxp))
                  (l (read-loca h m))
                  (g (read-glyf l)))
-            (let ((hh (read-hhea)))
-              (make-otff (read-cmap)
-                         h
-                         hh
-                         (read-hmtx (hhea-numberOfHMetrics hh) (maxp-numGlyphs m))
-                         m
-                         (read-name)
-                         (read-OS/2)
-                         (read-post)
-                         #f ; cvt
-                         #f ; fpgm
-                         g
-                         l
-                         #f ; prep
-                         #f
-                         #f
-                         #f
-                         #f
-                         #f
-                         #f
-                         #f
-                         #f
-                         #f
-                         #f
-                         #f
-                         #f
-                         #f
-                         #f
-                         #f
-                         #f
-                         #f
-                         #f
-                         #f
-                         )))))))
+            (make-otff (read-cmap)
+                       h
+                       hh
+                       (read-hmtx (hhea-numberOfHMetrics hh) (maxp-numGlyphs m))
+                       m
+                       (read-name)
+                       (read-OS/2)
+                       (read-post)
+                       #f ; cvt
+                       #f ; fpgm
+                       g
+                       l
+                       #f ; prep
+                       #f
+                       #f
+                       #f
+                       #f
+                       #f
+                       #f
+                       #f
+                       #f
+                       #f
+                       #f
+                       #f
+                       #f
+                       #f
+                       #f
+                       #f
+                       #f
+                       #f
+                       #f
+                       #f
+                       ))))))
 
 )
