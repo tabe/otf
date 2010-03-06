@@ -71,13 +71,13 @@
      ;; Required Tables
      cmap head hhea hmtx maxp name OS/2 post
      ;; Tables Related to TrueType Outlines
-     cvt fpgm glyf loca prep                 
+     cvt fpgm glyf loca prep
      ;; Tables Related to PostScript Outlines
-     CFF VORG                                
+     CFF VORG
      ;; Tables Related to Bitmap Glyphs
-     EBDT EBLC EBSC                          
+     EBDT EBLC EBSC
      ;; Advanced Typographic Tables
-     BASE GDEF GPOS GSUB JSTF                
+     BASE GDEF GPOS GSUB JSTF
      ;; Other OpenType Tables
      DSIG gasp hdmx kern LTSH PCLT VDMX vhea vmtx
      ))
