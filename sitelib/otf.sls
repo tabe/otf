@@ -62,6 +62,141 @@
           otff-VDMX
           otff-vhea
           otff-vmtx
+          offset-table?
+          offset-table-version
+          offset-table-num-tables
+          offset-table-search-range
+          offset-table-entry-selector
+          offset-table-range-shift
+          record-table?
+          record-table-tag
+          record-table-check-sum
+          record-table-offset
+          record-table-length
+          cmap-header?
+          cmap-header-version
+          cmap-header-numTables
+          cmap-encoding-record?
+          cmap-encoding-record-platformID
+          cmap-encoding-record-encodingID
+          cmap-encoding-record-offset
+          cmap-subtable?
+          cmap-subtable-format
+          cmap-subtable-length
+          cmap-subtable-language
+          cmap-subtable-format-0?
+          cmap-subtable-format-0-glyphIdArray
+          head?
+          head-Table-version-number
+          head-fontRevision
+          head-checkSumAdjustment
+          head-magicNumber
+          head-flags
+          head-unitsPerEm
+          head-created
+          head-modified
+          head-xMin
+          head-yMin
+          head-xMax
+          head-yMax
+          head-macStyle
+          head-lowestRecPPEM
+          head-fontDirectionHint
+          head-indexToLocFormat
+          head-glyphDataFormat
+          hhea?
+          hhea-Table-version-number
+          hhea-Ascender
+          hhea-Descender
+          hhea-LineGap
+          hhea-advanceWidthMax
+          hhea-minLeftSideBearing
+          hhea-minRightSideBearing
+          hhea-xMaxExtent
+          hhea-caretSlopeRise
+          hhea-caretSlopeRun
+          hhea-caretOffset
+          hhea-metricDataFormat
+          hhea-numberOfHMetrics
+          hmtx?
+          hmtx-hMetrics
+          hmtx-leftSideBearing
+          maxp?
+          maxp-Table-version-number
+          maxp-numGlyphs
+          name?
+          name-format
+          name-count
+          name-stringOffset
+          name-nameRecord
+          name-langTagCount
+          name-langTagRecord
+          lang-tag-record?
+          lang-tag-record-length
+          lang-tag-record-offset
+          name-record?
+          name-record-platformID
+          name-record-encodingID
+          name-record-languageID
+          name-record-nameID
+          name-record-length
+          name-record-offset
+          OS/2?
+          OS/2-version
+          OS/2-xAvgCharWidth
+          OS/2-usWeightClass
+          OS/2-usWidthClass
+          OS/2-fsType
+          OS/2-ySubscriptXSize
+          OS/2-ySubscriptYSize
+          OS/2-ySubscriptXOffset
+          OS/2-ySubscriptYOffset
+          OS/2-ySuperscriptXSize
+          OS/2-ySuperscriptYSize
+          OS/2-ySuperscriptXOffset
+          OS/2-ySuperscriptYOffset
+          OS/2-yStrikeoutSize
+          OS/2-yStrikeoutPosition
+          OS/2-sFamilyClass
+          OS/2-panose
+          OS/2-ulUnicodeRange1
+          OS/2-ulUnicodeRange2
+          OS/2-ulUnicodeRange3
+          OS/2-ulUnicodeRange4
+          OS/2-achVendID
+          OS/2-fsSelection
+          OS/2-usFirstCharIndex
+          OS/2-usLastCharIndex
+          OS/2-sTypoAscender
+          OS/2-sTypoDescender
+          OS/2-sTypoLineGap
+          OS/2-usWinAscent
+          OS/2-usWinDescent
+          OS/2-ulCodePageRange1
+          OS/2-ulCodePageRange2
+          OS/2-sxHeight
+          OS/2-sCapHeight
+          OS/2-usDefaultChar
+          OS/2-usBreakChar
+          OS/2-usMaxContext
+          post?
+          post-Version
+          post-italicAngle
+          post-underlinePosition
+          post-underlineThickness
+          post-isFixedPitch
+          post-minMemType42
+          post-maxMemType42
+          post-minMemType1
+          post-maxMemType1
+          glyf?
+          glyf-numberOfContours
+          glyf-xMin
+          glyf-yMin
+          glyf-xMax
+          glyf-yMax
+          loca?
+          loca-offsets
           read-otff)
   (import (rnrs (6)))
 
@@ -223,7 +358,7 @@
             maxMemType1))
 
   ;; http://www.microsoft.com/typography/otspec/glyf.htm
-  (define-record-type glyph
+  (define-record-type glyf
     (fields numberOfContours
             xMin
             yMin
@@ -329,19 +464,17 @@
             (let* ((*cmap-header* (let* ((version (get-ushort))
                                          (numTables (get-ushort)))
                                     (make-cmap-header version numTables)))
-                   (*cmap-encoding-records* (let loop ((n (cmap-header-numTables *cmap-header*))
-                                                       (ls '()))
-                                              (cond ((= n 0)
-                                                     (reverse ls))
-                                                    (else
-                                                     (loop (- n 1)
-                                                           (cons
-                                                            (let* ((platformID (get-ushort))
-                                                                   (encodingID (get-ushort))
-                                                                   (offset (get-ulong)))
-                                                              (make-cmap-encoding-record platformID encodingID offset))
-                                                            ls))))))
-                   (*cmap-format-0* (list-ref *cmap-encoding-records* 2)))
+                   (*cmap-encoding-records* (let ((v (make-vector (cmap-header-numTables *cmap-header*))))
+                                              (let lp ((i 0))
+                                                (cond ((= i (vector-length v))
+                                                       v)
+                                                      (else
+                                                       (let* ((platformID (get-ushort))
+                                                              (encodingID (get-ushort))
+                                                              (offset (get-ulong)))
+                                                         (vector-set! v i (make-cmap-encoding-record platformID encodingID offset)))
+                                                       (lp (+ i 1)))))))
+                   (*cmap-format-0* (vector-ref *cmap-encoding-records* 2)))
               (set-port-position! iport (+ (record-table-offset *table-cmap*) (cmap-encoding-record-offset *cmap-format-0*)))
               (let ((*cmap-subtable-format-0* (let* ((format (get-ushort))
                                                      (length (get-ushort))
@@ -590,52 +723,53 @@
 
           (define (read-glyf *loca*)
             (go-to-record-table *table-glyf*)
-            (let ((base (record-table-offset *table-glyf*)))
-              (let loop ((offsets (loca-offsets *loca*))
-                         (ls '()))
-                (cond ((null? (cdr offsets))
-                       (reverse ls))
-                      (else
-                       (let ((off0 (car offsets))
-                             (off1 (cadr offsets)))
-                         (cond ((= off0 off1)
-                                (loop (cdr offsets)
-                                      (cons #f ls)))
-                               (else
-                                (set-port-position! iport (+ off0 base))
-                                (let ((numberOfContours (get-short))
-                                      (xMin (get-short))
-                                      (yMin (get-short))
-                                      (xMax (get-short))
-                                      (yMax (get-short)))
-                                  (loop
-                                   (cdr offsets)
-                                   (cons
-                                    (make-glyph numberOfContours
-                                                xMin
-                                                yMin
-                                                xMax
-                                                yMax)
-                                    ls)))))))))))
+            (let* ((base (record-table-offset *table-glyf*))
+                   (offsets (loca-offsets *loca*))
+                   (n (vector-length offsets))
+                   (v (make-vector (- n 1))))
+              (let lp ((i 0))
+                (if (= i (vector-length v))
+                    v
+                    (let ((off0 (vector-ref offsets i))
+                          (off1 (vector-ref offsets (+ i 1))))
+                      (cond ((= off0 off1)
+                             (vector-set! v i #f)
+                             (lp (+ i 1)))
+                            (else
+                             (set-port-position! iport (+ off0 base))
+                             (let* ((numberOfContours (get-short))
+                                    (xMin (get-short))
+                                    (yMin (get-short))
+                                    (xMax (get-short))
+                                    (yMax (get-short)))
+                               (vector-set! v i (make-glyf numberOfContours
+                                                           xMin
+                                                           yMin
+                                                           xMax
+                                                           yMax)))
+                             (lp (+ i 1)))))))))
 
           (define (read-loca *head* *maxp*)
             (go-to-record-table *table-loca*)
-            (let ((*loca* (let ((n (+ 1 (maxp-numGlyphs *maxp*))))
-                            (make-loca
-                             (cond ((= 0 (head-indexToLocFormat *head*))
-                                    (let loop ((i 0)
-                                               (ls '()))
-                                      (if (= i n)
-                                          (reverse ls)
-                                          (loop (+ 1 i) (cons (get-ushort) ls)))))
-                                   (else
-                                    (let loop ((i 0)
-                                               (ls '()))
-                                      (if (= i n)
-                                          (reverse ls)
-                                          (loop (+ 1 i) (cons (get-ulong) ls))))))))))
-              (assert (apply <= (loca-offsets *loca*)))
-              *loca*))
+            (let* ((n (+ 1 (maxp-numGlyphs *maxp*)))
+                   (v (make-vector n)))
+
+              (define-syntax fill-v!
+                (syntax-rules ()
+                  ((_ x)
+                   (let lp ((i 0)
+                            (prev 0))
+                     (if (= i n)
+                         v
+                         (let ((u (x)))
+                           (assert (<= prev u))
+                           (vector-set! v i u)
+                           (lp (+ i 1) u)))))))
+
+              (if (= 0 (head-indexToLocFormat *head*))
+                  (fill-v! get-ushort)
+                  (fill-v! get-ulong))
+              (make-loca v)))
 
           (let* ((h (read-head))
                  (hh (read-hhea))
