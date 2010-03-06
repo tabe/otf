@@ -138,6 +138,12 @@
             metricDataFormat
             numberOfHMetrics))
 
+  ;; http://www.microsoft.com/typography/otspec/hmtx.htm
+  (define-record-type hmtx
+    (fields hMetrics        ; longHorMetric[numberOfHMetrics]
+            leftSideBearing ; SHORT[]
+            ))
+
   ;; http://www.microsoft.com/typography/otspec/maxp.htm
   (define-record-type maxp
     (fields Table-version-number numGlyphs))
@@ -289,6 +295,7 @@
         (let ((*table-cmap* (tag->record-table "cmap"))
               (*table-head* (tag->record-table "head"))
               (*table-hhea* (tag->record-table "hhea"))
+              (*table-hmtx* (tag->record-table "hmtx"))
               (*table-OS/2* (tag->record-table "OS/2"))
               (*table-maxp* (tag->record-table "maxp"))
               (*table-post* (tag->record-table "post"))
@@ -394,6 +401,24 @@
                            metricDataFormat
                            numberOfHMetrics))))
 
+          (define (read-hmtx numberOfHMetrics numGlyphs)
+            (go-to-record-table *table-hmtx*)
+            (let ((hMetrics (make-vector numberOfHMetrics))
+                  (leftSideBearing (make-vector (- numGlyphs numberOfHMetrics))))
+              (let lp1 ((i 0))
+                (cond ((= i numberOfHMetrics)
+                       (let lp2 ((i 0))
+                         (cond ((= i (- numGlyphs numberOfHMetrics))
+                                (make-hmtx hMetrics leftSideBearing))
+                               (else
+                                (vector-set! leftSideBearing i (get-short))
+                                (lp2 (+ i 1))))))
+                      (else
+                       (let* ((advanceWidth (get-ushort))
+                              (lsb (get-short)))
+                         (vector-set! hMetrics i (cons advanceWidth lsb))
+                         (lp1 (+ i 1))))))))
+
           (define (read-maxp)
             (go-to-record-table *table-maxp*)
             (let* ((Table-version-number (get-fixed))
@@ -440,42 +465,42 @@
                    (usBreakChar (get-ushort))
                    (usMaxContext (get-ushort)))
               (assert (<= version 4))
-              (make-OS/2 version 
-                         xAvgCharWidth 
-                         usWeightClass 
-                         usWidthClass 
-                         fsType 
-                         ySubscriptXSize 
-                         ySubscriptYSize 
-                         ySubscriptXOffset 
-                         ySubscriptYOffset 
-                         ySuperscriptXSize 
-                         ySuperscriptYSize 
-                         ySuperscriptXOffset 
-                         ySuperscriptYOffset 
-                         yStrikeoutSize 
-                         yStrikeoutPosition 
-                         sFamilyClass 
-                         panose 
-                         ulUnicodeRange1 
-                         ulUnicodeRange2 
-                         ulUnicodeRange3 
-                         ulUnicodeRange4 
-                         achVendID 
-                         fsSelection 
-                         usFirstCharIndex 
-                         usLastCharIndex 
-                         sTypoAscender 
-                         sTypoDescender 
-                         sTypoLineGap 
-                         usWinAscent 
-                         usWinDescent 
-                         ulCodePageRange1 
-                         ulCodePageRange2 
-                         sxHeight 
-                         sCapHeight 
-                         usDefaultChar 
-                         usBreakChar 
+              (make-OS/2 version
+                         xAvgCharWidth
+                         usWeightClass
+                         usWidthClass
+                         fsType
+                         ySubscriptXSize
+                         ySubscriptYSize
+                         ySubscriptXOffset
+                         ySubscriptYOffset
+                         ySuperscriptXSize
+                         ySuperscriptYSize
+                         ySuperscriptXOffset
+                         ySuperscriptYOffset
+                         yStrikeoutSize
+                         yStrikeoutPosition
+                         sFamilyClass
+                         panose
+                         ulUnicodeRange1
+                         ulUnicodeRange2
+                         ulUnicodeRange3
+                         ulUnicodeRange4
+                         achVendID
+                         fsSelection
+                         usFirstCharIndex
+                         usLastCharIndex
+                         sTypoAscender
+                         sTypoDescender
+                         sTypoLineGap
+                         usWinAscent
+                         usWinDescent
+                         ulCodePageRange1
+                         ulCodePageRange2
+                         sxHeight
+                         sCapHeight
+                         usDefaultChar
+                         usBreakChar
                          usMaxContext)))
 
           (define (read-post)
@@ -552,38 +577,39 @@
                  (m (read-maxp))
                  (l (read-loca h m))
                  (g (read-glyf l)))
-            (make-otff (read-cmap)
-                       h
-                       (read-hhea)
-                       #f ; hmtx
-                       m
-                       #f ; name
-                       (read-OS/2)
-                       (read-post)
-                       #f ; cvt
-                       #f ; fpgm
-                       g
-                       l
-                       #f ; prep
-                       #f
-                       #f
-                       #f
-                       #f
-                       #f
-                       #f
-                       #f
-                       #f
-                       #f
-                       #f
-                       #f
-                       #f
-                       #f
-                       #f
-                       #f
-                       #f
-                       #f
-                       #f
-                       #f
-                       ))))))
+            (let ((hh (read-hhea)))
+              (make-otff (read-cmap)
+                         h
+                         hh
+                         (read-hmtx (hhea-numberOfHMetrics hh) (maxp-numGlyphs m))
+                         m
+                         #f ; name
+                         (read-OS/2)
+                         (read-post)
+                         #f ; cvt
+                         #f ; fpgm
+                         g
+                         l
+                         #f ; prep
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         #f
+                         )))))))
 
 )
